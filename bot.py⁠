@@ -28,7 +28,7 @@ def services_menu(message):
     markup = types.InlineKeyboardMarkup(row_width=1)
     btn_ff = types.InlineKeyboardButton("Free Fire", callback_data="service_ff")
     btn_ml = types.InlineKeyboardButton("Mobile legend", callback_data="service_ml")
-    btn_maintenance = types.InlineKeyboardButton("កំពុងរៀបចំ ប្រព័ន្ធរអាក់រអួល", callback_data="service_maintenance")
+    btn_maintenance = types.InlineKeyboardButton("🛠️ កំពុងរៀបចំ", callback_data="service_maintenance")
     
     markup.add(btn_ff, btn_ml, btn_maintenance)
     
@@ -64,15 +64,9 @@ def account_info(message):
 # ដំណើរការពេលគេចុចលើប៊ូតុងថ្លាៗ (Inline Buttons) នៃសេវាកម្ម
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
-    if call.data == "service_ff":
-        bot.send_message(call.message.chat.id, "អ្នកបានជ្រើសរើសទិញសេវាកម្ម Free Fire (អាចបន្ថែមព័ត៌មាននៅទីនេះ)")
-        bot.answer_callback_query(call.id)
-    elif call.data == "service_ml":
-        bot.send_message(call.message.chat.id, "អ្នកបានជ្រើសរើសទិញសេវាកម្ម Mobile Legend (អាចបន្ថែមព័ត៌មាននៅទីនេះ)")
-        bot.answer_callback_query(call.id)
-    elif call.data == "service_maintenance":
-        # លោតសារព្រមាន (Alert) នៅលើអេក្រង់ទូរស័ព្ទ
-        bot.answer_callback_query(call.id, "កំពុងរៀបចំ ប្រព័ន្ធរអាក់រអួល", show_alert=True)
+    # មិនថាគេចុចប៊ូតុងមួយណាទេ (Free Fire, Mobile Legend, ឫ កំពុងរៀបចំ) វាលោតសារនេះ
+    bot.send_message(call.message.chat.id, "🛠️ ប្រព័ន្ធ កំពុងរៀបចំ៖ 🙏🏻🤍")
+    bot.answer_callback_query(call.id)
 
 # ឲ្យ Bot ដំណើរការរហូត
 print("Bot is starting...")

@@ -1,40 +1,96 @@
 import telebot
-from telebot.types import ReplyKeyboardMarkup, KeyboardButton
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 import os
 
 TOKEN = os.getenv('BOT_TOKEN', 'សូមដាក់_TOKEN_របស់អ្នកនៅទីនេះ')
 bot = telebot.TeleBot(TOKEN)
 
+# រៀបចំទិន្នន័យអត្ថបទជា ២ ភាសា
+lang_data = {
+    'kh': {
+        'welcome': "សួរស្ដី! សូមស្វាគមន៌មកកាន់ Toad Store 24/7\nសូមជ្រើសរើសសេវាកម្មខាងក្រោម",
+        'btn_account': "👨🏻‍💻 គណនី",
+        'btn_store': "🛍️ ហាងសេវា",
+        'btn_deposit': "💸 ដាក់ប្រាក់",
+        'btn_admin': "💬 អ្នកគ្រប់គ្រង",
+        'msg_store': "ប្រព័ន្ធកំពុង Update service .",
+        'msg_prepare': "កំពុងរៀបចំ...",
+        'msg_admin': "ទាក់ទងអ្នកគ្រប់គ្រងទីនេះ៖ @Dumyy_ji2"
+    },
+    'en': {
+        'welcome': "Hello! Welcome to Toad Store 24/7\nPlease select a service below",
+        'btn_account': "👨🏻‍💻 Account",
+        'btn_store': "🛍️ Store",
+        'btn_deposit': "💸 Deposit",
+        'btn_admin': "💬 Admin",
+        'msg_store': "System is updating service.",
+        'msg_prepare': "Preparing...",
+        'msg_admin': "Contact admin here: @Dumyy_ji2"
+    }
+}
+
+# ទុកចងចាំភាសាដែល User ម្នាក់ៗបានជ្រើសរើស
+user_langs = {}
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    # ប្រើ ReplyKeyboardMarkup ដើម្បីឱ្យប៊ូតុងនៅខាងក្រោម ហើយ resize_keyboard=True ឱ្យប៊ូតុងតូចល្មម
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    # បង្កើតប៊ូតុង Inline សម្រាប់រើសភាសា
+    lang_markup = InlineKeyboardMarkup()
+    btn_kh = InlineKeyboardButton("🇰🇭 ខ្មែរ", callback_data='lang_kh')
+    btn_en = InlineKeyboardButton("🇬🇧 English", callback_data='lang_en')
+    lang_markup.add(btn_kh, btn_en)
     
-    btn1 = KeyboardButton("👨🏻‍💻 គណនី")
-    btn2 = KeyboardButton("🛍️ ហាងសេវា")
-    btn3 = KeyboardButton("💸 ដាក់ប្រាក់")
-    btn4 = KeyboardButton("💬 អ្នកគ្រប់គ្រង")
-    
-    markup.add(btn1, btn2, btn3, btn4)
-    
-    text = (
-        "សួរស្ដី! សូមស្វាគមន៌មកកាន់ Toad Store 24/7\n"
-        "សូមជ្រើសរើសសេវាកម្មខាងក្រោម"
-    )
-    bot.send_message(message.chat.id, text, reply_markup=markup)
+    text = "សូមជ្រើសរើសភាសា / Please choose your language:"
+    bot.send_message(message.chat.id, text, reply_markup=lang_markup)
 
-# ចាប់យកសារនៅពេលគេចុចលើប៊ូតុង (ដោយសារវាជា Reply Keyboard វានឹងផ្ញើជាអក្សរ)
+# ចាប់យកសកម្មភាពពេលគេចុចរើសភាសា
+@bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
+def set_language(call):
+    chat_id = call.message.chat.id
+    
+    # កំណត់ភាសាតាមការជ្រើសរើស
+    if call.data == 'lang_en':
+        user_langs[chat_id] = 'en'
+    else:
+        user_langs[chat_id] = 'kh'
+        
+    lang = user_langs[chat_id]
+    
+    # លុបសាររើសភាសាចោល ដើម្បីឱ្យ Chat មើលទៅស្អាតមិនរញ៉េរញ៉ៃ
+    try:
+        bot.delete_message(chat_id, call.message.message_id)
+    except:
+        pass
+    
+    # បង្កើត Reply Keyboard ទៅតាមភាសាដែលបានរើស
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    markup.add(
+        KeyboardButton(lang_data[lang]['btn_account']),
+        KeyboardButton(lang_data[lang]['btn_store']),
+        KeyboardButton(lang_data[lang]['btn_deposit']),
+        KeyboardButton(lang_data[lang]['btn_admin'])
+    )
+    
+    # ផ្ញើសារស្វាគមន៍ និងម៉ឺនុយថ្មី
+    bot.send_message(chat_id, lang_data[lang]['welcome'], reply_markup=markup)
+
+# ចាប់យកសារពេលគេចុចប៊ូតុងម៉ឺនុយ
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
-    if message.text == "🛍️ ហាងសេវា":
-        bot.send_message(message.chat.id, "ប្រព័ន្ធកំពុង Update service .")
-    elif message.text == "👨🏻‍💻 គណនី":
-        bot.send_message(message.chat.id, "កំពុងរៀបចំ...")
-    elif message.text == "💸 ដាក់ប្រាក់":
-        bot.send_message(message.chat.id, "កំពុងរៀបចំ...")
-    elif message.text == "💬 អ្នកគ្រប់គ្រង":
-        # ផ្ញើ Username ដោយសារ Reply Keyboard មិនអាចដាក់ Link បាន
-        bot.send_message(message.chat.id, "ទាក់ទងអ្នកគ្រប់គ្រងទីនេះ៖ @Dumyy_ji2")
+    chat_id = message.chat.id
+    # បើ User មិនទាន់រើសភាសា វាលោតយកភាសាខ្មែរជាគោល (Default)
+    lang = user_langs.get(chat_id, 'kh')
+    text = message.text
+    
+    # ពិនិត្យមើលថាតើគេចុចលើប៊ូតុងមួយណា (ផ្ទៀងផ្ទាត់ទាំងខ្មែរ និងអង់គ្លេស)
+    if text in [lang_data['kh']['btn_store'], lang_data['en']['btn_store']]:
+        bot.send_message(chat_id, lang_data[lang]['msg_store'])
+    elif text in [lang_data['kh']['btn_account'], lang_data['en']['btn_account']]:
+        bot.send_message(chat_id, lang_data[lang]['msg_prepare'])
+    elif text in [lang_data['kh']['btn_deposit'], lang_data['en']['btn_deposit']]:
+        bot.send_message(chat_id, lang_data[lang]['msg_prepare'])
+    elif text in [lang_data['kh']['btn_admin'], lang_data['en']['btn_admin']]:
+        bot.send_message(chat_id, lang_data[lang]['msg_admin'])
 
 print("Bot កំពុងដំណើរការ...")
 bot.infinity_polling()

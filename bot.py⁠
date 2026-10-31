@@ -1,131 +1,109 @@
 import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-import os
 
-TOKEN = os.getenv('BOT_TOKEN', 'សូមដាក់_TOKEN_របស់អ្នកនៅទីនេះ')
-bot = telebot.TeleBot(TOKEN)
+# បញ្ចូល Bot Token របស់អ្នកនៅទីនេះ
+BOT_TOKEN = "ដាក់_TOKEN_របស់អ្នកនៅទីនេះ"
+bot = telebot.TeleBot(BOT_TOKEN)
 
-# រៀបចំទិន្នន័យអត្ថបទជា ២ ភាសា
-lang_data = {
-    'kh': {
-        'welcome': "សួរស្ដី! សូមស្វាគមន៌មកកាន់ Toad Store 24/7\nសូមជ្រើសរើសសេវាកម្មខាងក្រោម",
-        'btn_account': "👨🏻‍💻 គណនី",
-        'btn_store': "🛍️ ហាងសេវា",
-        'btn_deposit': "💸 ដាក់ប្រាក់",
-        'btn_admin': "💬 អ្នកគ្រប់គ្រង",
-        'btn_guide': "📚 របៀបប្រើប្រាស់",
-        'btn_history': "🕒 ប្រវត្ដិទិញ",
-        'msg_store': "ប្រព័ន្ធកំពុង Update service .",
-        'msg_prepare': "កំពុងរៀបចំ...",
-        'msg_admin': "ទាក់ទងអ្នកគ្រប់គ្រងទីនេះ៖ @Dumyy_ji2",
-        'msg_guide': "នេះគឺជាការណែនាំពីរបៀបប្រើប្រាស់ Bot របស់យើង (កំពុងរៀបចំ...)",
-        'msg_history': "អ្នកមិនទាន់មានប្រវត្តិទិញសេវាកម្មនៅឡើយទេ។",
-        'rank_normal': "អ្នកទិញធម្មតា",
-        'rank_admin': "Admin VIP",
-        'acc_template': "📋 <b>ព័ត៌មានគណនីរបស់អ្នក៖</b>\n\n👨🏻‍💻 <b>Username:</b> {username}\n🛠️ <b>ID:</b> <code>{id}</code>\n💼 <b>Balance:</b> {balance}\n👑 <b>Rank:</b> {rank}"
-    },
+# ទុកកំណត់ត្រាភាសារបស់អ្នកប្រើប្រាស់ម្នាក់ៗ (Default: 'en')
+user_lang = {}
+
+# ទិន្នន័យអត្ថបទសម្រាប់ភាសាខ្មែរ និងអង់គ្លេស
+texts = {
     'en': {
-        'welcome': "Hello! Welcome to Toad Store 24/7\nPlease select a service below",
-        'btn_account': "👨🏻‍💻 Account",
-        'btn_store': "🛍️ Store",
-        'btn_deposit': "💸 Deposit",
-        'btn_admin': "💬 Admin",
-        'btn_guide': "📚 How to use",
-        'btn_history': "🕒 Purchase history",
-        'msg_store': "System is updating service.",
-        'msg_prepare': "Preparing...",
-        'msg_admin': "Contact admin here: @Dumyy_ji2",
-        'msg_guide': "Here is the guide on how to use our Bot (Preparing...)",
-        'msg_history': "You have no purchase history yet.",
-        'rank_normal': "Normal Buyer",
-        'rank_admin': "Admin VIP",
-        'acc_template': "📋 <b>Your Account Info:</b>\n\n👨🏻‍💻 <b>Username:</b> {username}\n🛠️ <b>ID:</b> <code>{id}</code>\n💼 <b>Balance:</b> {balance}\n👑 <b>Rank:</b> {rank}"
+        'welcome': "👋 Welcome to our bot! Please choose an option below:",
+        'account': "👤 Account",
+        'store': "🛒 Store",
+        'add_fund': "💳 Add Fund",
+        'support': "🎧 Support",
+        'change_lang': "🌐 Change Language",
+        'lang_prompt': "Please select your language:",
+        'reply': "You clicked: "
+    },
+    'km': {
+        'welcome': "👋 សូមស្វាគមន៍មកកាន់ Bot របស់យើង! សូមជ្រើសរើសជម្រើសខាងក្រោម៖",
+        'account': "👤 គណនី",
+        'store': "🛒 ហាង",
+        'add_fund': "💳 បញ្ចូលប្រាក់",
+        'support': "🎧 ជំនួយ",
+        'change_lang': "🌐 ប្តូរភាសា",
+        'lang_prompt': "សូមជ្រើសរើសភាសារបស់អ្នក (Select Language):",
+        'reply': "អ្នកបានចុច៖ "
     }
 }
 
-user_langs = {}
+# មុខងារបង្កើត Main Menu Buttons
+def get_main_menu(lang):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    btn1 = KeyboardButton(texts[lang]['account'])
+    btn2 = KeyboardButton(texts[lang]['store'])
+    btn3 = KeyboardButton(texts[lang]['add_fund'])
+    btn4 = KeyboardButton(texts[lang]['support'])
+    btn5 = KeyboardButton(texts[lang]['change_lang'])
+    markup.add(btn1, btn2)
+    markup.add(btn3, btn4)
+    markup.add(btn5)
+    return markup
 
+# មុខងារបង្កើត Button ជ្រើសរើសភាសា (Inline)
+def get_language_menu():
+    markup = InlineKeyboardMarkup()
+    btn_km = InlineKeyboardButton("🇰🇭 ភាសាខ្មែរ", callback_data="lang_km")
+    btn_en = InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")
+    markup.add(btn_km, btn_en)
+    return markup
+
+# ចាប់យក Command /start
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    lang_markup = InlineKeyboardMarkup()
-    btn_kh = InlineKeyboardButton("🇰🇭 ខ្មែរ", callback_data='lang_kh')
-    btn_en = InlineKeyboardButton("🇬🇧 English", callback_data='lang_en')
-    lang_markup.add(btn_kh, btn_en)
-    
-    text = "សូមជ្រើសរើសភាសា / Please choose your language:"
-    bot.send_message(message.chat.id, text, reply_markup=lang_markup)
+    user_id = message.chat.id
+    # បង្ហាញជម្រើសភាសាពេលចូលដំបូង
+    bot.send_message(user_id, "🌐 Please select your language / សូមជ្រើសរើសភាសា៖", reply_markup=get_language_menu())
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
-def set_language(call):
-    chat_id = call.message.chat.id
-    
-    if call.data == 'lang_en':
-        user_langs[chat_id] = 'en'
+# ចាប់យកការចុចលើ Button ប្តូរភាសា (Inline Buttons)
+@bot.callback_query_handler(func=lambda call: call.data in ['lang_km', 'lang_en'])
+def handle_language_selection(call):
+    user_id = call.message.chat.id
+    if call.data == 'lang_km':
+        user_lang[user_id] = 'km'
+        bot.answer_callback_query(call.id, "អ្នកបានជ្រើសរើសភាសាខ្មែរ")
     else:
-        user_langs[chat_id] = 'kh'
-        
-    lang = user_langs[chat_id]
+        user_lang[user_id] = 'en'
+        bot.answer_callback_query(call.id, "You selected English")
     
-    try:
-        bot.delete_message(chat_id, call.message.message_id)
-    except:
-        pass
-    
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(
-        KeyboardButton(lang_data[lang]['btn_account']),
-        KeyboardButton(lang_data[lang]['btn_store']),
-        KeyboardButton(lang_data[lang]['btn_deposit']),
-        KeyboardButton(lang_data[lang]['btn_admin']),
-        KeyboardButton(lang_data[lang]['btn_guide']),
-        KeyboardButton(lang_data[lang]['btn_history'])
-    )
-    
-    bot.send_message(chat_id, lang_data[lang]['welcome'], reply_markup=markup)
+    lang = user_lang[user_id]
+    # លុបសារជ្រើសរើសភាសាចាស់ចោល និងផ្ញើ Main Menu ថ្មី
+    bot.delete_message(user_id, call.message.message_id)
+    bot.send_message(user_id, texts[lang]['welcome'], reply_markup=get_main_menu(lang))
 
+# ចាប់យកការចុចលើ Main Menu Buttons
 @bot.message_handler(func=lambda message: True)
-def handle_text(message):
-    chat_id = message.chat.id
-    lang = user_langs.get(chat_id, 'kh')
+def handle_menu_clicks(message):
+    user_id = message.chat.id
+    lang = user_lang.get(user_id, 'en') # យកភាសា English ជាគោលបើមិនទាន់បានរើស
     text = message.text
     
-    if text in [lang_data['kh']['btn_store'], lang_data['en']['btn_store']]:
-        bot.send_message(chat_id, lang_data[lang]['msg_store'])
+    # ពិនិត្យមើលថាតើគាត់ចុចប៊ូតុងមួយណា
+    if text in [texts['en']['change_lang'], texts['km']['change_lang']]:
+        bot.send_message(user_id, texts[lang]['lang_prompt'], reply_markup=get_language_menu())
+    
+    elif text in [texts['en']['account'], texts['km']['account']]:
+        bot.send_message(user_id, f"{texts[lang]['reply']} <b>{text}</b>\n\n<i>ទិន្នន័យគណនីរបស់អ្នកនឹងបង្ហាញនៅទីនេះ...</i>", parse_mode='HTML')
         
-    # កន្លែងរៀបចំទម្រង់ គណនី (Account)
-    elif text in [lang_data['kh']['btn_account'], lang_data['en']['btn_account']]:
-        user_info = message.from_user
-        raw_username = user_info.username
+    elif text in [texts['en']['store'], texts['km']['store']]:
+        bot.send_message(user_id, f"{texts[lang]['reply']} <b>{text}</b>\n\n<i>ទំនិញក្នុងហាងនឹងបង្ហាញនៅទីនេះ...</i>", parse_mode='HTML')
         
-        # បើគាត់អត់មានដាក់ Username ក្នុង Telegram ទេ វានឹងលោតពាក្យថា None
-        display_username = f"@{raw_username}" if raw_username else "មិនមាន (None)"
+    elif text in [texts['en']['add_fund'], texts['km']['add_fund']]:
+        bot.send_message(user_id, f"{texts[lang]['reply']} <b>{text}</b>\n\n<i>សូមជ្រើសរើសវិធីសាស្ត្របង់ប្រាក់...</i>", parse_mode='HTML')
         
-        # ពិនិត្យមើល Username ដើម្បីផ្តល់ Rank (Admin VIP)
-        if raw_username and raw_username.lower() == "dumyy_ji2":
-            rank = lang_data[lang]['rank_admin']
-        else:
-            rank = lang_data[lang]['rank_normal']
-            
-        balance = "0.00 $" # លុយ (អាចទាញពី Database បាននៅពេលក្រោយ)
+    elif text in [texts['en']['support'], texts['km']['support']]:
+        bot.send_message(user_id, f"{texts[lang]['reply']} <b>{text}</b>\n\n<i>ទាក់ទងមកកាន់ Admin តាមរយៈ @YourAdminUsername...</i>", parse_mode='HTML')
         
-        # បញ្ចូលទិន្នន័យទៅក្នុងទម្រង់ដែលបានរៀបចំទុក
-        reply_msg = lang_data[lang]['acc_template'].format(
-            username=display_username,
-            id=user_info.id,
-            balance=balance,
-            rank=rank
-        )
-        # ប្រើ parse_mode='HTML' ដើម្បីឱ្យអក្សរដិតស្អាត និង ID ងាយស្រួល Copy
-        bot.send_message(chat_id, reply_msg, parse_mode='HTML')
-        
-    elif text in [lang_data['kh']['btn_deposit'], lang_data['en']['btn_deposit']]:
-        bot.send_message(chat_id, lang_data[lang]['msg_prepare'])
-    elif text in [lang_data['kh']['btn_admin'], lang_data['en']['btn_admin']]:
-        bot.send_message(chat_id, lang_data[lang]['msg_admin'])
-    elif text in [lang_data['kh']['btn_guide'], lang_data['en']['btn_guide']]:
-        bot.send_message(chat_id, lang_data[lang]['msg_guide'])
-    elif text in [lang_data['kh']['btn_history'], lang_data['en']['btn_history']]:
-        bot.send_message(chat_id, lang_data[lang]['msg_history'])
+    else:
+        # បើគាត់វាយអក្សរផ្សេង
+        bot.send_message(user_id, texts[lang]['welcome'], reply_markup=get_main_menu(lang))
 
-print("Bot កំពុងដំណើរការ...")
-bot.infinity_polling()
+# ដំណើរការ Bot កុំឲ្យឈប់
+if __name__ == "__main__":
+    print("Bot is running...")
+    bot.infinity_polling()
